@@ -1,0 +1,33 @@
+{
+  "name": "omnibus-ts",
+  "version": "1.0.0",
+  "description": "Omnibus Message bindings for TypeScript and SocketIO",
+  "license": "MIT",
+  "author": "Waterloo Rocketry",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.ts",
+  "scripts": {
+    "test": "vitest",
+    "build": "tsc",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.5",
+    "@types/lodash": "^4.17.20",
+    "@types/node": "^24.9.2",
+    "express": "^4.21.2",
+    "prettier": "^3.6.2",
+    "socket.io": "^4.8.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.6"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "socket.io-client": "^4.8.1",
+    "socket.io-msgpack-parser": "^3.0.2"
+  },
+  "files": [
+    "dist/**/*"
+  ]
+}
