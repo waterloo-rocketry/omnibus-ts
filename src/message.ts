@@ -2,13 +2,13 @@ import { io } from 'socket.io-client'
 import msgpackParser from 'socket.io-msgpack-parser'
 import { toCamelCase, toSnakeCase } from './helpers.js'
 
-import type { DAQMessage } from './data/daqMessage.ts'
+import type { DAQMessage } from './data/DaqMessage.ts'
 import type {
     ParsleyMessage,
     CANCommandMessage,
     RLCSv3Message,
     ParsleyHeartbeatMessage,
-} from './data/canMessage.ts'
+} from './data/CanMessage.ts'
 
 export type AnyPayload =
     | DAQMessage

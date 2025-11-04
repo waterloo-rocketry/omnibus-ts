@@ -1,9 +1,9 @@
 type SensorName = string
 
-export interface DAQMessage extends Record<string, unknown> {
+export interface DAQMessage {
     timestamp: number
     data: Record<SensorName, number[]>
     relativeTimestamps: number[]
     sampleRate: number
-    messageVersion: number
+    messageVersion: 2
 }
