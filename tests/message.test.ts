@@ -7,7 +7,7 @@ import msgpackParser from 'socket.io-msgpack-parser'
 import { communicator } from '../src/index.js'
 
 import { Message, AnyPayload } from '../src/message.ts'
-import type { DAQMessage } from '../src/data/daqMessage.ts'
+import type { DAQMessage } from '../src/data/DaqMessage.ts'
 
 describe('test Omnibus communication functions', () => {
     let server: HTTPServer | null = null
