@@ -1,14 +1,26 @@
 import { io } from 'socket.io-client'
 import msgpackParser from 'socket.io-msgpack-parser'
-import { toCamelCase, toSnakeCase } from './helpers.js'
+import { snakeCaseParser, toSnakeCase } from './helpers.js'
 
-import type { DAQMessage } from './data/DaqMessage.ts'
+import _ from 'radash'
+import { z } from 'zod'
+
+import { DAQMessageSchema } from './data/DAQMessage.js'
+import type { DAQMessage } from './data/DAQMessage.ts'
+
+import {
+    ParsleyMessageSchema,
+    CANCommandMessageSchema,
+    RLCSv3MessageSchema,
+    ParsleyHeartbeatMessageSchema,
+} from './data/CANMessage.js'
+
 import type {
     ParsleyMessage,
     CANCommandMessage,
     RLCSv3Message,
     ParsleyHeartbeatMessage,
-} from './data/CanMessage.ts'
+} from './data/CANMessage.ts'
 
 export type AnyPayload =
     | DAQMessage
@@ -35,6 +47,25 @@ export interface MessageToSend<T extends AnyPayload> extends Message<T> {
     channel: ChannelLiteralToPayloadType<T>
 }
 
+
+const getPayloadSchemaFromChannel = (channel: unknown) => {
+    if (typeof channel !== 'string') {
+        throw new Error(`[Omnibus] Channel must be a string, got: ${typeof channel}`)
+    }
+
+    const mapChannelPrefix: Record<string, z.ZodObject | z.ZodRecord> = {
+        "DAQ": DAQMessageSchema,
+        "CAN/Parsley": ParsleyMessageSchema,
+        "CAN/Commands": CANCommandMessageSchema,
+        "Parsley/Health": ParsleyHeartbeatMessageSchema,
+        "RLCS": RLCSv3MessageSchema,
+    }
+
+    const channelPrefix = Object.keys(mapChannelPrefix).find(prefix => channel.startsWith(prefix))
+
+    return channelPrefix ? mapChannelPrefix[channelPrefix] : undefined
+}
+
 export const socketCallbackBuilder = <T extends AnyPayload>(
     channel: string,
     afterMessageReceived: (msg: Message<T>) => void
@@ -47,28 +78,31 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
         return {
             channel: channel,
             timestamp: timestamp,
-            payload: toCamelCase(payload) as T,
+            payload: payload as T,
         }
     }
-    return (event: string, timestamp: number, payload: object) => {
-        if (
-            typeof timestamp !== 'number' ||
-            typeof payload !== 'object' ||
-            !payload
-        ) {
-            console.warn(
-                `[Omnibus] Malformed Message! ${[event, timestamp, payload]}`
-            )
+
+    const eventHandler = (event: string, timestamp: number, payload: object) => {
+        if (!event.startsWith(channel)) return
+
+        const schema = getPayloadSchemaFromChannel(event)
+        if (!schema) {
+            console.error("[Omnibus] Received message on unknown channel:", event)
             return
         }
 
-        if (
-            event.toLowerCase().startsWith(channel.toLowerCase()) ||
-            channel === ''
-        ) {
-            afterMessageReceived(buildMessageObject(event, timestamp, payload))
+        const [payloadParseError, messagePayload] = _.tryit(snakeCaseParser(schema).parse)(payload)
+        if (payloadParseError || !messagePayload) {
+            console.error(`[Omnibus] Failed to parse payload for channel ${event}:`, payloadParseError)
+            console.trace()
+            return
         }
+        
+        const msgObject = buildMessageObject(event, timestamp, messagePayload)
+        afterMessageReceived(msgObject)
     }
+
+    return eventHandler
 }
 
 export function getOmnibusSenderReceiver(serverURL: string) {
@@ -86,18 +120,20 @@ export function getOmnibusSenderReceiver(serverURL: string) {
         channel: string | '',
         callback: (msg: Message<T>) => void
     ) => {
-        socket.onAny(socketCallbackBuilder<T>(channel, callback))
+        const handler = socketCallbackBuilder(channel, callback)
+        socket.onAny(handler)
+        return () => socket.offAny(handler)
     }
 
     const receive = <T extends AnyPayload>(
         channel: ChannelLiteralToPayloadType<T>,
         callback: (msg: Message<T>) => void
     ) => {
-        _attachReceiver(channel, callback)
+        return _attachReceiver(channel, callback)
     }
 
     const receiveAll = (callback: (msg: Message<AnyPayload>) => void) => {
-        _attachReceiver<AnyPayload>('', callback)
+        return _attachReceiver('', callback)
     }
 
     // No static type checking or runtime sanity checks
