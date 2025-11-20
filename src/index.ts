@@ -1,7 +1,7 @@
 import { getOmnibusSenderReceiver } from './message.js'
 
-export type * from './data/DaqMessage.ts'
-export type * from './data/CanMessage.ts'
+export type * from './data/DAQMessage.ts'
+export type * from './data/CANMessage.ts'
 
 const communicator = ({
     serverURL,

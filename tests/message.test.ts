@@ -7,7 +7,9 @@ import msgpackParser from 'socket.io-msgpack-parser'
 import { communicator } from '../src/index.js'
 
 import { Message, AnyPayload } from '../src/message.ts'
-import type { DAQMessage } from '../src/data/DaqMessage.ts'
+
+import { DAQMessageSchema } from '../src/data/DAQMessage.ts'
+import type { DAQMessage } from '../src/data/DAQMessage.ts'
 
 describe('test Omnibus communication functions', () => {
     let server: HTTPServer | null = null
@@ -80,11 +82,12 @@ describe('test Omnibus communication functions', () => {
         const secondChannel = 'DAQ/abdc'
         const testPayload = {
             timestamp: Date.now() / 1000,
-            data: { sensor1: [1, 2, 3], sensor2: [4, 5, 6] },
+            data: { sensor1: [1, 2, 3], sensor2: [4, 5, 6] } as Record<string, number[]>,
             relativeTimestamps: [0, 1, 2],
             sampleRate: 1000,
-            messageVersion: 2,
-        }
+            messageFormatVersion: 3,
+        } as DAQMessage
+
         const arr: Message<DAQMessage>[] = []
         const allMessages: Message<AnyPayload>[] = []
 
@@ -155,7 +158,8 @@ describe('test Omnibus communication functions', () => {
                 return fns.socket!.onAny((...args) => {
                     callback(...args)
                     expect(console.warn).toHaveBeenCalledWith(
-                        expect.stringContaining('[Omnibus] Malformed Message!')
+                        expect.stringContaining('Received malformed payload'),
+                        expect.any(Error)
                     )
                     expect(console.warn).toHaveBeenCalledTimes(1)
                     a.mockClear()
@@ -167,7 +171,7 @@ describe('test Omnibus communication functions', () => {
             console.log(msg)
         })
         expect(fns.socket!.onAny).toHaveBeenCalled()
-        fns.socket?.emit('Some/Channel', Date.now() / 1000, null)
+        fns.socket?.emit('DAQ', Date.now() / 1000, null)
     })
 
     it('should throw error on bad payload', async () => {
@@ -184,7 +188,8 @@ describe('test Omnibus communication functions', () => {
                 return fns.socket!.onAny((...args) => {
                     callback(...args)
                     expect(console.warn).toHaveBeenCalledWith(
-                        expect.stringContaining('[Omnibus] Malformed Message!')
+                        expect.stringContaining('Received malformed payload'),
+                        expect.any(Error)
                     )
                     expect(console.warn).toHaveBeenCalledTimes(1)
                     a.mockClear()
@@ -197,7 +202,7 @@ describe('test Omnibus communication functions', () => {
         })
         expect(fns.socket!.onAny).toHaveBeenCalled()
         fns.socket?.emit(
-            'Some/Channel',
+            'DAQ',
             Date.now() / 1000,
             'string or something'
         )
@@ -217,7 +222,8 @@ describe('test Omnibus communication functions', () => {
                 return fns.socket!.onAny((...args) => {
                     callback(...args)
                     expect(console.warn).toHaveBeenCalledWith(
-                        expect.stringContaining('[Omnibus] Malformed Message!')
+                        expect.stringContaining('Received malformed payload'),
+                        expect.any(Error)
                     )
                     expect(console.warn).toHaveBeenCalledTimes(1)
                     a.mockClear()
@@ -229,6 +235,6 @@ describe('test Omnibus communication functions', () => {
             console.log(msg)
         })
         expect(fns.socket!.onAny).toHaveBeenCalled()
-        fns.socket?.emit('Some/Channel', 'bad timestamp', 'string or something')
+        fns.socket?.emit('DAQ', 'bad timestamp', 'string or something')
     })
 })

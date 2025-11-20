@@ -2,7 +2,6 @@ import { io } from 'socket.io-client'
 import msgpackParser from 'socket.io-msgpack-parser'
 import { snakeCaseParser, toSnakeCase } from './helpers.js'
 
-import _ from 'radash'
 import { z } from 'zod'
 
 import { DAQMessageSchema } from './data/DAQMessage.js'
@@ -87,19 +86,18 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
 
         const schema = getPayloadSchemaFromChannel(event)
         if (!schema) {
-            console.error("[Omnibus] Received message on unknown channel:", event)
+            console.warn("[Omnibus] Received message on unknown channel:", event)
             return
         }
 
-        const [payloadParseError, messagePayload] = _.tryit(snakeCaseParser(schema).parse)(payload)
-        if (payloadParseError || !messagePayload) {
-            console.error(`[Omnibus] Failed to parse payload for channel ${event}:`, payloadParseError)
-            console.trace()
+        try {
+            const messagePayload = snakeCaseParser(schema).parse(payload)
+            const msgObject = buildMessageObject(event, timestamp, messagePayload)
+            afterMessageReceived(msgObject)
+        } catch (e) {
+            console.warn(`[Omnibus] Received malformed payload on channel ${event}:`, e)
             return
         }
-        
-        const msgObject = buildMessageObject(event, timestamp, messagePayload)
-        afterMessageReceived(msgObject)
     }
 
     return eventHandler
@@ -148,9 +146,11 @@ export function getOmnibusSenderReceiver(serverURL: string) {
             payload: T
         }) => void
     ) => {
-        socket.onAny((event: string, timestamp: number, payload: T) => {
+        const fn = (event: string, timestamp: number, payload: T) => {
             callback({ channel: event, timestamp, payload })
-        })
+        }
+        socket.onAny(fn)
+        return () => socket.offAny(fn)
     }
 
     const disconnect = () => {
