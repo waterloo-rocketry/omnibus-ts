@@ -89,7 +89,7 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
         timestamp: number,
         payload: object
     ) => {
-        if (!event.startsWith(channel)) return
+        if (!event.startsWith(channel) && channel !== '') return
 
         const schema = getPayloadSchemaFromChannel(event)
         if (!schema) {
