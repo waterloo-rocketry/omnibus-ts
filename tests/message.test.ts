@@ -82,7 +82,10 @@ describe('test Omnibus communication functions', () => {
         const secondChannel = 'DAQ/abdc'
         const testPayload = {
             timestamp: Date.now() / 1000,
-            data: { sensor1: [1, 2, 3], sensor2: [4, 5, 6] } as Record<string, number[]>,
+            data: { sensor1: [1, 2, 3], sensor2: [4, 5, 6] } as Record<
+                string,
+                number[]
+            >,
             relativeTimestamps: [0, 1, 2],
             sampleRate: 1000,
             messageFormatVersion: 3,
@@ -201,11 +204,7 @@ describe('test Omnibus communication functions', () => {
             console.log(msg)
         })
         expect(fns.socket!.onAny).toHaveBeenCalled()
-        fns.socket?.emit(
-            'DAQ',
-            Date.now() / 1000,
-            'string or something'
-        )
+        fns.socket?.emit('DAQ', Date.now() / 1000, 'string or something')
     })
 
     it('should throw error on bad timestamp', async () => {

@@ -46,21 +46,24 @@ export interface MessageToSend<T extends AnyPayload> extends Message<T> {
     channel: ChannelLiteralToPayloadType<T>
 }
 
-
 const getPayloadSchemaFromChannel = (channel: unknown) => {
     if (typeof channel !== 'string') {
-        throw new Error(`[Omnibus] Channel must be a string, got: ${typeof channel}`)
+        throw new Error(
+            `[Omnibus] Channel must be a string, got: ${typeof channel}`
+        )
     }
 
     const mapChannelPrefix: Record<string, z.ZodObject | z.ZodRecord> = {
-        "DAQ": DAQMessageSchema,
-        "CAN/Parsley": ParsleyMessageSchema,
-        "CAN/Commands": CANCommandMessageSchema,
-        "Parsley/Health": ParsleyHeartbeatMessageSchema,
-        "RLCS": RLCSv3MessageSchema,
+        DAQ: DAQMessageSchema,
+        'CAN/Parsley': ParsleyMessageSchema,
+        'CAN/Commands': CANCommandMessageSchema,
+        'Parsley/Health': ParsleyHeartbeatMessageSchema,
+        RLCS: RLCSv3MessageSchema,
     }
 
-    const channelPrefix = Object.keys(mapChannelPrefix).find(prefix => channel.startsWith(prefix))
+    const channelPrefix = Object.keys(mapChannelPrefix).find((prefix) =>
+        channel.startsWith(prefix)
+    )
 
     return channelPrefix ? mapChannelPrefix[channelPrefix] : undefined
 }
@@ -81,21 +84,35 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
         }
     }
 
-    const eventHandler = (event: string, timestamp: number, payload: object) => {
+    const eventHandler = (
+        event: string,
+        timestamp: number,
+        payload: object
+    ) => {
         if (!event.startsWith(channel)) return
 
         const schema = getPayloadSchemaFromChannel(event)
         if (!schema) {
-            console.warn("[Omnibus] Received message on unknown channel:", event)
+            console.warn(
+                '[Omnibus] Received message on unknown channel:',
+                event
+            )
             return
         }
 
         try {
             const messagePayload = snakeCaseParser(schema).parse(payload)
-            const msgObject = buildMessageObject(event, timestamp, messagePayload)
+            const msgObject = buildMessageObject(
+                event,
+                timestamp,
+                messagePayload
+            )
             afterMessageReceived(msgObject)
         } catch (e) {
-            console.warn(`[Omnibus] Received malformed payload on channel ${event}:`, e)
+            console.warn(
+                `[Omnibus] Received malformed payload on channel ${event}:`,
+                e
+            )
             return
         }
     }

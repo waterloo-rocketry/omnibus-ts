@@ -5,7 +5,7 @@ export const DAQMessageSchema = z.object({
     data: z.record(z.string(), z.array(z.number())),
     relativeTimestamps: z.array(z.number()),
     sampleRate: z.int(),
-    messageFormatVersion: z.literal(3)
+    messageFormatVersion: z.literal(3),
 })
 
 export type DAQMessage = z.infer<typeof DAQMessageSchema>
