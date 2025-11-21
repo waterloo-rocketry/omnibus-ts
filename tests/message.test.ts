@@ -8,7 +8,6 @@ import { communicator } from '../src/index.js'
 
 import { Message, AnyPayload } from '../src/message.ts'
 
-import { DAQMessageSchema } from '../src/data/DAQMessage.ts'
 import type { DAQMessage } from '../src/data/DAQMessage.ts'
 
 describe('test Omnibus communication functions', () => {

@@ -29,11 +29,12 @@ export type AnyPayload =
     | ParsleyHeartbeatMessage
 
 type ChannelLiteralToPayloadType<T extends AnyPayload> =
-    T extends DAQMessage ? `DAQ${string}`
-    : T extends ParsleyMessage ? `CAN/Parsley${string}`
-    : T extends CANCommandMessage ? `CAN/Commands${string}`
-    : T extends ParsleyHeartbeatMessage ? `Parsley/Health${string}`
-    : T extends RLCSv3Message ? `RLCS${string}`
+    T extends DAQMessage ? `DAQ/${string}` | 'DAQ'
+    : T extends ParsleyMessage ? `CAN/Parsley/${string}` | 'CAN/Parsley'
+    : T extends CANCommandMessage ? `CAN/Commands/${string}` | 'CAN/Commands'
+    : T extends ParsleyHeartbeatMessage ?
+        `Parsley/Health/${string}` | 'Parsley/Health'
+    : T extends RLCSv3Message ? `RLCS/${string}` | 'RLCS'
     : never
 
 export interface Message<T extends AnyPayload> {
@@ -61,9 +62,10 @@ const getPayloadSchemaFromChannel = (channel: unknown) => {
         RLCS: RLCSv3MessageSchema,
     }
 
-    const channelPrefix = Object.keys(mapChannelPrefix).find((prefix) =>
-        channel.startsWith(prefix)
-    )
+    const channelPrefix = Object.keys(mapChannelPrefix).find((prefix) => {
+        const channelParts = channel.split('/')
+        return prefix.split('/').every((part, i) => channelParts[i] === part)
+    })
 
     return channelPrefix ? mapChannelPrefix[channelPrefix] : undefined
 }
