@@ -146,6 +146,7 @@ describe('test Omnibus communication functions', () => {
         expect(fns.socket?.connected).toBe(false)
     })
 
+    // TODO: Fix this so it doesn't depend as much on the implementation (Chris Yang <chrisyx511@gmail.com>)
     it('should throw error on null payload', async () => {
         const fns = await getCommunicatorInstance()
         const a = vi

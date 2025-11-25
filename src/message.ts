@@ -1,3 +1,5 @@
+// TODO: Maybe there's a better name for this file?
+
 import { io } from 'socket.io-client'
 import msgpackParser from 'socket.io-msgpack-parser'
 import { snakeCaseParser, toSnakeCase } from './helpers.js'
