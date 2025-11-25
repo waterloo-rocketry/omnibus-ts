@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client'
 import msgpackParser from 'socket.io-msgpack-parser'
 import { snakeCaseParser, toSnakeCase } from './helpers.js'
+import { tryit } from 'radash'
 
 import { z } from 'zod'
 
@@ -93,7 +94,15 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
     ) => {
         if (!event.startsWith(channel) && channel !== '') return
 
-        const schema = getPayloadSchemaFromChannel(event)
+        const [schemaGetError, schema] = tryit(getPayloadSchemaFromChannel)(
+            event
+        )
+
+        if (schemaGetError) {
+            console.warn(schemaGetError)
+            return
+        }
+
         if (!schema) {
             console.warn(
                 '[Omnibus] Received message on unknown channel:',
@@ -102,21 +111,20 @@ export const socketCallbackBuilder = <T extends AnyPayload>(
             return
         }
 
-        try {
-            const messagePayload = snakeCaseParser(schema).parse(payload)
-            const msgObject = buildMessageObject(
-                event,
-                timestamp,
-                messagePayload
-            )
-            afterMessageReceived(msgObject)
-        } catch (e) {
+        const [parserError, messagePayload] = tryit(
+            snakeCaseParser(schema).parse
+        )(payload)
+
+        if (parserError) {
             console.warn(
                 `[Omnibus] Received malformed payload on channel ${event}:`,
-                e
+                parserError
             )
             return
         }
+
+        const msgObject = buildMessageObject(event, timestamp, messagePayload)
+        afterMessageReceived(msgObject)
     }
 
     return eventHandler
