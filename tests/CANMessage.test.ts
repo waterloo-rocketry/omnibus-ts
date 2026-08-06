@@ -4,6 +4,7 @@ import {
     CANCommandMessageSchema,
     ParsleyMessageSchema,
 } from '../src/data/CANMessage.js'
+import { DAQMessageSchema } from '../src/data/DAQMessage.js'
 import { snakeCaseParser, toSnakeCase } from '../src/helpers.js'
 
 describe('Parsley CAN message schemas', () => {
@@ -95,5 +96,20 @@ describe('Parsley CAN message schemas', () => {
                 },
             },
         })
+    })
+
+    it('preserves snake case keys in non-CAN data records', () => {
+        const wirePayload = {
+            timestamp: 1,
+            data: { sensor_value: [800] },
+            relative_timestamps: [0],
+            sample_rate: 100,
+            message_format_version: 3,
+        }
+
+        const payload = snakeCaseParser(DAQMessageSchema).parse(wirePayload)
+
+        expect(payload.data).toStrictEqual({ sensor_value: [800] })
+        expect(toSnakeCase(payload)).toStrictEqual(wirePayload)
     })
 })
